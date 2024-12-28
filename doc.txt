@@ -1,0 +1,37 @@
+use connect to keep the network connected
+expoerted=erlang:register(tag,mypid).
+needed=[tag1,,tagN]
+exported=[register(tag,mypid)]
+serviceid={node,pid}
+imported=[{tag,serviceid},{tag,serviceid}]
+
+find needed [{N,rpc:call(N,erlang,whereis,[Tag],5000)}||Tag<-Needed,
+             undefined=/=rpc:call(N,erlang,whereis(Tag))]
+
+update()-> do_find needed
+upadate is called when a new node is started or terminated and interval 1 min
+
+use send and alias for communication see erlang otp
+server() ->
+    receive
+        {request, AliasReqId, Request} ->
+            Result = perform_request(Request),
+            AliasReqId ! {reply, AliasReqId, Result}
+    end,
+    server().
+
+client(ServerPid, Request) ->
+    AliasReqId = alias([reply]),
+    ServerPid ! {request, AliasReqId, Request},
+    %% Alias will be automatically deactivated if we receive a reply
+    %% since we used the 'reply' option...
+    receive
+        {reply, AliasReqId, Result} -> Result
+    after 5000 ->
+            unalias(AliasReqId),
+            %% Flush message queue in case the reply arrived
+            %% just before the alias was deactivated...
+            receive {reply, AliasReqId, Result} -> Result
+            after 0 -> exit(timeout)
+            end
+    end.
