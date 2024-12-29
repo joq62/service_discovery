@@ -268,9 +268,32 @@ handle_cast({update}, State) ->
 
 
 handle_cast({update_loop}, State) ->
-    {ok,ImportedList}=lib_service_discovery:update(State#state.needed),
-    io:format("ImportedList ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE,ImportedList}]),
-    NewState=State#state{imported=ImportedList},
+    io:format("update_loop ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE}]),
+    LenImported=erlang:length(State#state.imported),
+    {ok,NewImportedList}=lib_service_discovery:update(State#state.needed),
+    LenNew=erlang:length(NewImportedList),
+    if
+	LenImported=:=LenNew->
+	    ok;
+	LenNew>LenImported-> % New applications added
+	    AddedApplications=[ServiceId||ServiceId<-NewImportedList,
+				    false=:=lists:member(ServiceId,State#state.imported)],
+	    ?LOG_NOTICE("Application added ",[AddedApplications]);
+	  %  io:format("AddedApplications ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE,AddedApplications}]);
+	LenNew<LenImported-> %Removed applications
+	    RemovedApplications=[ServiceId||ServiceId<-State#state.imported,
+				    false=:=lists:member(ServiceId,NewImportedList)],
+	    ?LOG_NOTICE("Application removed ",[RemovedApplications])
+	   % io:format("RemovedApplications ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE,RemovedApplications}])
+    end,
+    if
+	LenImported=/=LenNew->
+	    ?LOG_NOTICE("Application imported ",[NewImportedList]);
+	  %  io:format("Updated imported ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE,NewImportedList}]);
+	true->
+	    ok
+    end,
+    NewState=State#state{imported=NewImportedList},
     spawn(fun()->loop() end),
     {noreply,NewState};
 

@@ -127,13 +127,17 @@ handle_info(glurk, State) ->
     io:format("glurk ~p~n",[{self(),?MODULE}]),
     {noreply, State};
 
-handle_info({timeout}, State) ->
-    io:format("timeout ~p~n",[{self(),?MODULE}]),
+handle_info({request, AliasReqId, {timeout,[T]}}, State) ->
+    timer:sleep(T+1000),
+    AliasReqId ! {reply, AliasReqId, {error,["timeout ",AliasReqId, {timeout,[T]}]}},
     {noreply, State};
 
 handle_info({request, AliasReqId, {ping,[]}}, State) ->
     Result = {ok,pong},
     AliasReqId ! {reply, AliasReqId, Result},
+    {noreply, State};
+handle_info({request, _AliasReqId, {cast,[]}}, State) ->
+    io:format("cast ~p~n",[{self(),?MODULE}]),
     {noreply, State};
 
 handle_info({request, AliasReqId,Request}, State) ->

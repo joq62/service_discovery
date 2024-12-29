@@ -29,7 +29,7 @@ start()->
    
     ok=setup(),
     ok=config_test(),
- %   ok=send_receive_test(),
+    ok=send_receive_test(),
       
     io:format("Test OK !!! ~p~n",[?MODULE]),
     timer:sleep(2000),
@@ -42,7 +42,19 @@ start()->
 %% --------------------------------------------------------------------
 send_receive_test()->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE}]),
-
+    ok=service_discovery:config_needed(?NeededList),
+    ok=service_discovery:update(),
+    timer:sleep(100),
+ %   {ok,[{dummy,Node,ServerPid}|_]}=service_discovery:get_all(dummy),
+    
+    {ok,ServerPid}=client:server_pid(dummy),
+    {error,["undefined",glurk]}=client:server_pid(glurk),
+    
+    {ok,pong}=client:call(ServerPid,{ping,[]},5000),
+    ok=client:cast(ServerPid,{cast,[]}),
+    {error,["timeout ",ServerPid,{timeout,[2000]},2000]}=client:call(ServerPid,{timeout,[2000]},2000),
+    
+    
     ok.
 %%-----------------------------------------------
 %% Function: available_hosts()
@@ -110,6 +122,8 @@ setup()->
     %% 
     ConnectNode=start_node("connect"),
     true=net_kernel:connect_node(ConnectNode),
+
+
     _Nodes=[get_node(Name)||Name<-?TestNodeNames],
     Started=[start_node(Name)||Name<-?TestNodeNames],
     [true,true,true]=[rpc:call(N,net_kernel,connect_node,[ConnectNode],5000)||N<-Started],
@@ -127,23 +141,10 @@ setup()->
     
     [N1,N2,N3]=get_nodes(),
     [true,true,true]=[rpc:call(N,code,add_path,["test_ebin"],5000)||N<-get_nodes()],
-   
-    %%
-  %  R1=rpc:call(N1,dummy,start_link,[]),
-  %  io:format("R1 ~p~n",[{R1,?MODULE,?FUNCTION_NAME,?LINE}]),
-  %  init:stop(),
-  %  timer:sleep(3000),
-
     R1=[{N,rpc:call(N,dummy,start,[])}||N<-get_nodes()],
-    io:format("R1 ~p~n",[{R1,?MODULE,?FUNCTION_NAME,?LINE}]),
-    [{N1,{ok,P1}},{N2,{ok,_P2}},{N3,{ok,_P3}}]=R1,
+    [{N1,{ok,_P1}},{N2,{ok,_P2}},{N3,{ok,_P3}}]=R1,
     _PidDb1=rpc:call(N1,db,start,[]),
     timer:sleep(1000),
-  %    io:format("P1 + process_info~p~n",[{P1,rpc:call(N1,erlang,is_process_alive,[P1],5000),?MODULE,?FUNCTION_NAME,?LINE}]),
-  %  P1!{timeout},
-   
-
-
     ok.
 
 
