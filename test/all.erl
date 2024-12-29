@@ -29,10 +29,20 @@ start()->
    
     ok=setup(),
     ok=config_test(),
+ %   ok=send_receive_test(),
       
     io:format("Test OK !!! ~p~n",[?MODULE]),
     timer:sleep(2000),
   %  init:stop(),
+    ok.
+%%-----------------------------------------------
+%% Function: available_hosts()
+%% Description: Based on hosts.config file checks which hosts are avaible
+%% Returns: List({HostId,Ip,SshPort,Uid,Pwd}
+%% --------------------------------------------------------------------
+send_receive_test()->
+    io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE}]),
+
     ok.
 %%-----------------------------------------------
 %% Function: available_hosts()
@@ -100,7 +110,7 @@ setup()->
     %% 
     ConnectNode=start_node("connect"),
     true=net_kernel:connect_node(ConnectNode),
-    Nodes=[get_node(Name)||Name<-?TestNodeNames],
+    _Nodes=[get_node(Name)||Name<-?TestNodeNames],
     Started=[start_node(Name)||Name<-?TestNodeNames],
     [true,true,true]=[rpc:call(N,net_kernel,connect_node,[ConnectNode],5000)||N<-Started],
     application:start(log),
@@ -110,17 +120,30 @@ setup()->
     application:start(?Appl),
     pong=?Appl:ping(),
     
-    DbPid=spawn(dummy,start,[]),
-    timer:sleep(10),
-    DbPid=erlang:whereis(dummy),
+    dummy:start_link(),
+    timer:sleep(100),
+    DummyPid=erlang:whereis(dummy),
     DummyPid=rpc:call(node(),erlang,whereis,[dummy],500),
     
     [N1,N2,N3]=get_nodes(),
     [true,true,true]=[rpc:call(N,code,add_path,["test_ebin"],5000)||N<-get_nodes()],
-    R1=[{N,erlang:spawn(N,dummy,start,[])}||N<-get_nodes()],
-    [{N1,P1},{N2,P2},{N3,P3}]=R1,
-    PidDb1=erlang:spawn(N1,db,start,[]),
-    timer:sleep(10),
+   
+    %%
+  %  R1=rpc:call(N1,dummy,start_link,[]),
+  %  io:format("R1 ~p~n",[{R1,?MODULE,?FUNCTION_NAME,?LINE}]),
+  %  init:stop(),
+  %  timer:sleep(3000),
+
+    R1=[{N,rpc:call(N,dummy,start,[])}||N<-get_nodes()],
+    io:format("R1 ~p~n",[{R1,?MODULE,?FUNCTION_NAME,?LINE}]),
+    [{N1,{ok,P1}},{N2,{ok,_P2}},{N3,{ok,_P3}}]=R1,
+    _PidDb1=rpc:call(N1,db,start,[]),
+    timer:sleep(1000),
+  %    io:format("P1 + process_info~p~n",[{P1,rpc:call(N1,erlang,is_process_alive,[P1],5000),?MODULE,?FUNCTION_NAME,?LINE}]),
+  %  P1!{timeout},
+   
+
+
     ok.
 
 
@@ -131,10 +154,10 @@ start_node(Name)->
     true=net_kernel:connect_node(Node),
     Node.
 
-stop_node(Name)->
-    {ok,Host}=net:gethostname(),
-    Node=list_to_atom(Name++"@"++Host),
-    slave:stop(Node).
+%stop_node(Name)->
+%    {ok,Host}=net:gethostname(),
+%    Node=list_to_atom(Name++"@"++Host),
+%    slave:stop(Node).
 
 
 get_nodes()->

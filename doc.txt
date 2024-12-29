@@ -1,3 +1,36 @@
+*-------------------------------------------------------
+To do in applications
+At start
+service_discovery:config_needed([application1,applicationN]).
+
+sending message
+Request={Fun,Args}
+
+[{Application_x,Node,ServerPid}|T]=service_discovery:get_all(Application_x),
+sd:send(ServerPid,Request,Timeout),
+sd:send(ServerPid,Request),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*--------------------------------------------------------
+
+
+
+
 use connect to keep the network connected
 expoerted=erlang:register(tag,mypid).
 needed=[tag1,,tagN]
