@@ -268,7 +268,6 @@ handle_cast({update}, State) ->
 
 
 handle_cast({update_loop}, State) ->
-    io:format("update_loop ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE}]),
     LenImported=erlang:length(State#state.imported),
     {ok,NewImportedList}=lib_service_discovery:update(State#state.needed),
     LenNew=erlang:length(NewImportedList),
