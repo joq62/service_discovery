@@ -80,17 +80,28 @@ config_test()->
  
     {ok,[]}=service_discovery:get_all(glurk),
     {ok,[{db,'n1@c50',_}]}=service_discovery:get_all(db),
-    {ok,[{dummy,'n3@c50',_},{dummy,'n2@c50',_},{dummy,'n1@c50',_},{dummy,'test_appl@c50',_}]}=service_discovery:get_all(dummy),
+    {ok,[{dummy,'n1@c50',_},
+	 {dummy,'n2@c50',_},
+	 {dummy,'n3@c50',_},
+	 {dummy,'test_appl@c50',_}]
+    }=service_discovery:get_all(dummy),
     
     %% kill node
     io:format("kill node ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE}]),
     slave:stop('n1@c50'),
     timer:sleep(100),
     {ok,[{db,'n1@c50',_}]}=service_discovery:get_all(db),
-    {ok,[{dummy,'n3@c50',_},{dummy,'n2@c50',_},{dummy,'n1@c50',_},{dummy,'test_appl@c50',_}]}=service_discovery:get_all(dummy),
+    {ok,[{dummy,'n1@c50',_},
+	 {dummy,'n2@c50',_},
+	 {dummy,'n3@c50',_},
+	 {dummy,'test_appl@c50',_}]
+    }=service_discovery:get_all(dummy),
     timer:sleep(11000),
     {ok,[]}=service_discovery:get_all(db),
-    {ok,[{dummy,'n3@c50',_},{dummy,'n2@c50',_},{dummy,'test_appl@c50',_}]}=service_discovery:get_all(dummy),
+    {ok,[{dummy,'n2@c50',_},
+	 {dummy,'n3@c50',_},
+	 {dummy,'test_appl@c50',_}]
+    }=service_discovery:get_all(dummy),
     
 
     %%restart Node
@@ -100,15 +111,19 @@ config_test()->
     erlang:spawn(N1,db,start,[]),
     timer:sleep(11000),
     {ok,[{db,'n1@c50',_}]}=service_discovery:get_all(db),
-    {ok,[{dummy,'n3@c50',_},{dummy,'n2@c50',_},{dummy,'test_appl@c50',_}]}=service_discovery:get_all(dummy),
+    {ok,[{dummy,'n2@c50',_},
+	 {dummy,'n3@c50',_},
+	 {dummy,'test_appl@c50',_}
+	]
+    }=service_discovery:get_all(dummy),
 
     %%kill process
     io:format("kill process ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE}]),
-    {ok,[{dummy,'n3@c50',PidToKill}|_]}=service_discovery:get_all(dummy),
+    {ok,[{dummy,'n2@c50',PidToKill}|_]}=service_discovery:get_all(dummy),
     true=erlang:exit(PidToKill,kill),
     timer:sleep(11000),
     {ok,[{db,'n1@c50',_}]}=service_discovery:get_all(db),
-    {ok,[{dummy,'n2@c50',_},{dummy,'test_appl@c50',_}]}=service_discovery:get_all(dummy),
+    {ok,[{dummy,'n3@c50',_},{dummy,'test_appl@c50',_}]}=service_discovery:get_all(dummy),
 
     ok.
 

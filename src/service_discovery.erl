@@ -263,36 +263,36 @@ handle_cast({config_exported,ExportedList}, State) ->
 
 handle_cast({update}, State) ->
     {ok,ImportedList}=lib_service_discovery:update(State#state.needed),
-    NewState=State#state{imported=ImportedList},
+    NewImportedList=lists:sort(ImportedList),
+    NewState=State#state{imported=NewImportedList},
     {noreply,NewState};
 
 
 handle_cast({update_loop}, State) ->
-    LenImported=erlang:length(State#state.imported),
-    {ok,NewImportedList}=lib_service_discovery:update(State#state.needed),
-    LenNew=erlang:length(NewImportedList),
-    if
-	LenImported=:=LenNew->
-	    ok;
-	LenNew>LenImported-> % New applications added
-	    AddedApplications=[ServiceId||ServiceId<-NewImportedList,
-				    false=:=lists:member(ServiceId,State#state.imported)],
-	    ?LOG_NOTICE("Application added ",[AddedApplications]);
-	  %  io:format("AddedApplications ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE,AddedApplications}]);
-	LenNew<LenImported-> %Removed applications
-	    RemovedApplications=[ServiceId||ServiceId<-State#state.imported,
-				    false=:=lists:member(ServiceId,NewImportedList)],
-	    ?LOG_NOTICE("Application removed ",[RemovedApplications])
-	   % io:format("RemovedApplications ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE,RemovedApplications}])
-    end,
-    if
-	LenImported=/=LenNew->
-	    ?LOG_NOTICE("Application imported ",[NewImportedList]);
-	  %  io:format("Updated imported ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE,NewImportedList}]);
-	true->
-	    ok
-    end,
-    NewState=State#state{imported=NewImportedList},
+    {ok,ImportedList}=lib_service_discovery:update(State#state.needed),
+    NewImportedList=lists:sort(ImportedList),
+    NewState=if
+		 State#state.imported=:=NewImportedList->
+		     State;
+		 true->
+		     AddedApplications=[ServiceId||ServiceId<-NewImportedList,
+						   false=:=lists:member(ServiceId,State#state.imported)],
+		     RemovedApplications=[ServiceId||ServiceId<-State#state.imported,
+						     false=:=lists:member(ServiceId,NewImportedList)],
+		     if
+			 AddedApplications=/=[]->
+			     ?LOG_NOTICE("Application added ",[AddedApplications]);
+			 true->
+			     ok
+		     end,
+		     if
+			 RemovedApplications=/=[]->
+			     ?LOG_NOTICE("Application removed ",[RemovedApplications]);
+			 true->
+			     ok
+		     end,?LOG_NOTICE("Uppdated imported applications ",[NewImportedList]),
+		     State#state{imported=NewImportedList}
+	     end,
     spawn(fun()->loop() end),
     {noreply,NewState};
 
