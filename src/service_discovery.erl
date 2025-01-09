@@ -271,9 +271,6 @@ handle_cast({update}, State) ->
 handle_cast({update_loop}, State) ->
     {ok,ImportedList}=lib_service_discovery:update(State#state.needed),
     NewImportedList=lists:sort(ImportedList),
-    io:format("DBG State#state.imported ~p~n",[{State#state.imported,?MODULE,?LINE}]),
-    io:format("DBG NewImportedList ~p~n",[{NewImportedList,?MODULE,?LINE}]),
-
     NewState=if
 		 State#state.imported=:=NewImportedList->
 		     State;

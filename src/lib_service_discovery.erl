@@ -27,7 +27,6 @@ update(NeededList)->
     ConnectNode=list_to_atom("connect"++"@"++Host),
     net_kernel:connect_node(ConnectNode),
     Registered=[{N,rpc:call(N,erlang,registered,[],5000)}||N<-[node()|nodes()]],
-    io:format("DBG Registered ~p~n",[{Registered,?MODULE,?LINE}]),
     ImportedList=update(Registered,NeededList,[]),    
     {ok,ImportedList}.
     
@@ -37,7 +36,6 @@ update([{Node,_Registered}|T],NeededList,Acc)->
     ServiceIds=[{Tag,Node,rpc:call(Node,erlang,whereis,[Tag],5000)}||Tag<-NeededList,
 								     undefined=/=rpc:call(Node,erlang,whereis,[Tag],5000)],
     
-    io:format("DBG ServiceIds ~p~n",[{ServiceIds,?MODULE,?LINE}]),
     NewAcc=case ServiceIds of
 	       []->
 		   Acc;
