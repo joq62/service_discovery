@@ -35,6 +35,8 @@ update([],_,Acc)->
 update([{Node,_Registered}|T],NeededList,Acc)->
     ServiceIds=[{Tag,Node,rpc:call(Node,erlang,whereis,[Tag],5000)}||Tag<-NeededList,
 								     undefined=/=rpc:call(Node,erlang,whereis,[Tag],5000)],
+    
+    io:format("DBG ServiceIds ~p~n",[{ServiceIds,?MODULE,?LINE}]),
     NewAcc=case ServiceIds of
 	       []->
 		   Acc;
